@@ -1,0 +1,25 @@
+{
+  "name": "doctolib-availabilities",
+  "version": "1.0.0",
+  "description": "config.js :",
+  "main": "index.js",
+  "dependencies": {
+    "influx": "^5.9.2",
+    "moment": "^2.29.1",
+    "puppeteer": "^5.5.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gallofeliz/doctolib-availabilities.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gallofeliz/doctolib-availabilities/issues"
+  },
+  "homepage": "https://github.com/gallofeliz/doctolib-availabilities#readme"
+}

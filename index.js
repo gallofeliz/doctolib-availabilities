@@ -1,37 +1,5 @@
 #!/usr/bin/env nodejs
 
-/*
-module.exports = {
-    frequency: 10 * 60,
-    browser: {
-        headless: true
-    },
-    influxDB: {
-        host: '192.168.1.2',
-        database: 'mydb',
-        measurement: 'doctolib'
-    },
-    checks: [
-        {
-            id: 'x',
-            refuseReplace: true,
-            motive: 'Feliz-47',
-            url: 'https://www.doctolib.fr/x',
-            wantedBefore: '2021-07-12'
-        },
-        {
-            id: 'y',
-            alreadySeen: false,
-            refuseReplace: true,
-            teleHealth: false,
-            motive: 'Première consultation-175',
-            url: 'https://www.doctolib.fr/y',
-            wantedBefore: '2021-07-12'
-        },
-    ]
-};
-
-*/
 const config = require('./config');
 const puppeteer = require('puppeteer');
 const Influx = require('influx');
@@ -134,7 +102,7 @@ async function run() {
 
             influx.writePoints([
               {
-                measurement: influxDB.influxDB.measurement,
+                measurement: config.influxDB.measurement,
                 fields: {
                     availability
                 },
@@ -160,5 +128,5 @@ async function run() {
     await browser.close();
 }
 
-setInterval(run, config.frequency * 1000);
+setInterval(run, (config.frequency || 10 * 60) * 1000);
 run();
