@@ -33,3 +33,9 @@ module.exports = {
     ]
 };
 ```
+
+Then
+
+```
+./index.js
+```
