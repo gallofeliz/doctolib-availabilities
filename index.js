@@ -1,20 +1,32 @@
 #!/usr/bin/env nodejs
 
 const config = require('./config');
-const puppeteer = require('puppeteer');
-const Influx = require('influx');
+const puppeteer = require('puppeteer-core');
 const moment = require('moment');
+const nodemailer = require("nodemailer");
+const availabilities = {
+
+};
 
 async function run() {
     const browser = await puppeteer.launch({
         defaultViewport: null,
-        args: ['--start-maximized', '--disable-features=site-per-process'],
-        headless: config.browser.headless
+        executablePath: process.env.CHROMIUM_PATH,
+        args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox'],
+        headless: true
     });
 
     async function doJob(config) {
 
+        console.log('Doing ' + config.id)
+
+        if (availabilities[config.id] === undefined) {
+            availabilities[config.id] = false;
+        }
+
         const page = await browser.newPage();
+
+        await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
         await page.setViewport({ width: 1280, height: 800 })
 
@@ -43,7 +55,9 @@ async function run() {
                 return avail.next_slot;
             }
 
-            let exludes = []
+            // Todo : use https://www.doctolib.fr/availabilities.json?start_date=2021-07-22&visit_motive_ids=2460309&agenda_ids=391618&insurance_sector=public&practice_ids=155768&limit=14
+
+            let excludes = []
             if (config.refuseReplace) {
                 avail.availabilities.forEach(day => {
                     Object.values(day.substitution || {}).forEach(sub => {
@@ -65,7 +79,6 @@ async function run() {
         }
         await page.waitFor(1000);
 
-
         if (config.alreadySeen === false) {
             await page.click('label[for=all_visit_motives-1]');
             await page.waitFor(1000);
@@ -73,6 +86,11 @@ async function run() {
 
         if (config.teleHealth === false) {
             await page.click('input[name="telehealth"][value="false"]');
+            await page.waitFor(1000);
+        }
+
+        if (config.motiveCat) {
+            await page.select('#booking_motive_category', config.motiveCat);
             await page.waitFor(1000);
         }
 
@@ -95,32 +113,42 @@ async function run() {
         }
 
         console.log('next date', config.id, date)
+        console.log('availability', config.id, availability)
 
-        if (config.influxDB) {
+        if (config.mail) {
+            const newValue = availability === 1 ? true : false;
 
-            const influx = new Influx.InfluxDB(config.influxDB)
+            if (availabilities[config.id] === false && newValue === true) {
 
-            influx.writePoints([
-              {
-                measurement: config.influxDB.measurement,
-                fields: {
-                    availability
-                },
-                tags: {
-                    id: config.id
-                }
-              }
-            ])
+                  const transporter = nodemailer.createTransport({
+                    host: config.mail.smtp.host,
+                    port: config.mail.smtp.port,
+                    secure: config.mail.smtp.port === 465, // true for 465, false for other ports
+                    auth: {
+                      user: config.mail.smtp.user, // generated ethereal user
+                      pass: config.mail.smtp.password, // generated ethereal password
+                    }
+                  });
 
-        } else {
-            console.log('availability', config.id, availability)
+                  const text = config.id + ' ' + moment(date).format('YYYY-MM-DD')
+
+                await transporter.sendMail({
+                    from: '"Doctolib alert" <localhost>', // sender address
+                    to: config.mail.to, // list of receivers
+                    subject: "New Doctolib Availability", // Subject line
+                    text: text, // plain text body
+                    html: "<b>"+text+"</b>", // html body
+                  });
+            }
+
+            availabilities[config.id] = newValue;
         }
-
     }
 
     for(let conf of config.checks) {
         try {
             await doJob({...config, ...conf})
+            await new Promise(resolve => setTimeout(resolve, 5000))
         } catch (e) {
             console.error(e)
         }
