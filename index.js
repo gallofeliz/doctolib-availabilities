@@ -130,7 +130,7 @@ async function run() {
                     }
                   });
 
-                  const text = config.id + ' ' + moment(date).format('YYYY-MM-DD')
+                  const text = config.id + ' ' + moment(date).format('YYYY-MM-DD') + ' ' + config.url
 
                 await transporter.sendMail({
                     from: '"Doctolib alert" <localhost>', // sender address
