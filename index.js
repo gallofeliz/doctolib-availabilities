@@ -155,6 +155,9 @@ async function run() {
         }
     }
 
+    // WTF on raspberry pi the browser freezes
+    const security = setTimeout(() => browser.close(), config.checks.length * 60 * 1000)
+
     for(let conf of config.checks) {
         try {
             await doJob({...config, ...conf})
@@ -164,6 +167,7 @@ async function run() {
         }
     }
     await browser.close();
+    clearTimeout(security)
     setTimeout(run, (config.frequency || 10 * 60) * 1000);
 }
 
