@@ -70,36 +70,46 @@ async function run() {
             return dispo ? dispo.date : null
         }
 
+        console.log('Go to', config.url)
         await page.goto(config.url);
 
         await page.waitFor(2000)
         try {
+            console.log('Click and Agree button')
             await page.click('#didomi-notice-agree-button');
         } catch (e) {
         }
+
         await page.waitFor(1000);
 
         if (config.alreadySeen === false) {
+            console.log('Handle alreadySeen')
             await page.click('label[for=all_visit_motives-1]');
             await page.waitFor(1000);
         }
 
         if (config.teleHealth === false) {
+            console.log('Handle telehealth')
             await page.click('input[name="telehealth"][value="false"]');
             await page.waitFor(1000);
         }
 
         if (config.motiveCat) {
+            console.log('handle motiveCat')
             await page.select('#booking_motive_category', config.motiveCat);
             await page.waitFor(1000);
         }
 
         if (config.motive) {
+            console.log('Handle motive')
             await page.select('#booking_motive', config.motive);
         }
 
         const date = getNextSlot(await getAvail())
         let availability = 0;
+
+        console.log('Closing page')
+        await page.close()
 
         if (date) {
             let maxDate = config.wantedBefore;
@@ -154,7 +164,7 @@ async function run() {
         }
     }
     await browser.close();
+    setTimeout(run, (config.frequency || 10 * 60) * 1000);
 }
 
-setInterval(run, (config.frequency || 10 * 60) * 1000);
 run();
