@@ -12,7 +12,7 @@ async function run() {
     const browser = await puppeteer.launch({
         defaultViewport: null,
         executablePath: process.env.CHROMIUM_PATH,
-        args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox'],
+        args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox', '--disable-gpu'],
         headless: true
     });
 
