@@ -4,14 +4,13 @@ const config = require('./config');
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
-const availabilities = {
-
-};
+const availabilities = {};
 
 async function run() {
     const browser = await puppeteer.launch({
         defaultViewport: null,
         executablePath: process.env.CHROMIUM_PATH,
+        // --disable-gpu avoid RPI to freeze on newPage() after one browser close
         args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox', '--disable-gpu'],
         headless: true
     });
@@ -24,12 +23,9 @@ async function run() {
             availabilities[config.id] = false;
         }
 
-        console.log('Opening page')
         const page = await browser.newPage();
-        console.log('Set useragent')
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
-        console.log('Set viewport')
         await page.setViewport({ width: 1280, height: 800 })
 
         async function getAvail() {
@@ -72,12 +68,10 @@ async function run() {
             return dispo ? dispo.date : null
         }
 
-        console.log('Go to', config.url)
         await page.goto(config.url);
 
         await page.waitFor(2000)
         try {
-            console.log('Click and Agree button')
             await page.click('#didomi-notice-agree-button');
         } catch (e) {
         }
@@ -85,32 +79,27 @@ async function run() {
         await page.waitFor(1000);
 
         if (config.alreadySeen === false) {
-            console.log('Handle alreadySeen')
             await page.click('label[for=all_visit_motives-1]');
             await page.waitFor(1000);
         }
 
         if (config.teleHealth === false) {
-            console.log('Handle telehealth')
             await page.click('input[name="telehealth"][value="false"]');
             await page.waitFor(1000);
         }
 
         if (config.motiveCat) {
-            console.log('handle motiveCat')
             await page.select('#booking_motive_category', config.motiveCat);
             await page.waitFor(1000);
         }
 
         if (config.motive) {
-            console.log('Handle motive')
             await page.select('#booking_motive', config.motive);
         }
 
         const date = getNextSlot(await getAvail())
         let availability = 0;
 
-        console.log('Closing page')
         await page.close()
 
         if (date) {
@@ -125,7 +114,6 @@ async function run() {
         }
 
         console.log('next date', config.id, date)
-        console.log('availability', config.id, availability)
 
         if (config.mail) {
             const newValue = availability === 1 ? true : false;
@@ -157,8 +145,10 @@ async function run() {
         }
     }
 
-    // WTF on raspberry pi the browser freezes
-    const security = setTimeout(() => browser.close(), config.checks.length * 60 * 1000)
+    const security = setTimeout(() => {
+        console.log('Closing browser (security anti freeze)')
+        browser.close()
+    }, config.checks.length * 60 * 1000)
 
     for(let conf of config.checks) {
         try {
