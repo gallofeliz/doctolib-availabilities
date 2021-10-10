@@ -84,7 +84,7 @@ async function run() {
         }
 
         if (config.teleHealth === false) {
-            await page.click('input[name="telehealth"][value="false"]');
+            await page.click('input[name="telehealth"][value="physicalAppointment"]');
             await page.waitFor(1000);
         }
 
