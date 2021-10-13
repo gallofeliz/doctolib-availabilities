@@ -11,6 +11,7 @@ COPY index.js ./
 
 USER nobody
 
+ENV HEADLESS=true
 ENV CHROMIUM_PATH=/usr/bin/chromium
 
 CMD node index.js

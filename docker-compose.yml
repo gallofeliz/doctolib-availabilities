@@ -5,3 +5,8 @@ services:
     build: .
     volumes:
       - ./config.js:/app/config.js:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    user: "1000"
+    environment:
+      - DISPLAY=:0
+      - HEADLESS

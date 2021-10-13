@@ -12,7 +12,7 @@ async function run() {
         executablePath: process.env.CHROMIUM_PATH,
         // --disable-gpu avoid RPI to freeze on newPage() after one browser close
         args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox', '--disable-gpu'],
-        headless: true
+        headless: process.env.HEADLESS === 'false' ? false : true
     });
 
     async function doJob(config) {
@@ -81,10 +81,16 @@ async function run() {
         if (config.alreadySeen === false) {
             await page.click('label[for=all_visit_motives-1]');
             await page.waitFor(1000);
+        } else if (config.alreadySeen === true) {
+            await page.click('label[for=all_visit_motives-0]');
+            await page.waitFor(1000);
         }
 
         if (config.teleHealth === false) {
             await page.click('input[name="telehealth"][value="physicalAppointment"]');
+            await page.waitFor(1000);
+        } else if (config.teleHealth === true) {
+            await page.click('input[name="telehealth"][value="videoAppointment"]');
             await page.waitFor(1000);
         }
 
