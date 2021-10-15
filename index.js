@@ -48,6 +48,8 @@ async function run() {
 
         }
 
+        const avail = getAvail()
+
         function getNextSlot(avail) {
             if (avail.next_slot) {
                 return avail.next_slot;
@@ -103,7 +105,7 @@ async function run() {
             await page.select('#booking_motive', config.motive);
         }
 
-        const date = getNextSlot(await getAvail())
+        const date = getNextSlot(await avail)
         let availability = 0;
 
         await page.close()
