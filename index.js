@@ -4,7 +4,86 @@ const config = require('./config');
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
-const availabilities = {};
+const {EventEmitter} = require('events');
+
+class Availabilities extends EventEmitter {
+    constructor() {
+        super()
+        this.availabilities = {}
+    }
+
+    update(id, value) {
+        const previousValue = this.get(id)
+
+        const strPreviousValue = previousValue instanceof Object ? previousValue.toString() : previousValue
+        const strValue = value instanceof Object ? value.toString() : value
+
+        if (strPreviousValue === strValue) {
+            return
+        }
+
+        this.availabilities[id] = value
+
+        this.emit('change', id, value, previousValue)
+    }
+
+    get(id) {
+        return this.availabilities[id]
+    }
+
+    getAll() {
+        // Should be cloned, but I am lazy
+        return this.availabilities
+    }
+}
+
+class MailNotifier {
+    constructor(mailConfig) {
+        this.mailConfig = mailConfig
+        this.transporter = nodemailer.createTransport({
+            host: mailConfig.smtp.host,
+            port: mailConfig.smtp.port,
+            secure: mailConfig.smtp.port === 465, // true for 465, false for other ports
+            auth: {
+              user: mailConfig.smtp.user, // generated ethereal user
+              pass: mailConfig.smtp.password, // generated ethereal password
+            }
+        });
+    }
+
+    subscribe(checks, availabilities) {
+
+        availabilities.on('change', async (id, value, previousValue) => {
+
+            if (!value) {
+                return
+            }
+
+            const text = value instanceof Error
+                ? id + ' ' + value.toString()
+                : id + ' ' + moment(value).format('YYYY-MM-DD') + ' ' + checks.find(check => check.id === id).url
+
+            const subject = value instanceof Error
+                ? 'Doctolib Availability Error'
+                : 'New Doctolib Availability'
+
+            await this.transporter.sendMail({
+                from: '"Doctolib alert" <localhost>', // sender address
+                to: this.mailConfig.to, // list of receivers
+                subject, // Subject line
+                text: text, // plain text body
+                html: "<b>"+text+"</b>", // html body
+              })
+        })
+    }
+}
+
+const availabilities = new Availabilities
+
+if (config.mail) {
+    const mailNotifier = new MailNotifier(config.mail)
+    mailNotifier.subscribe(config.checks, availabilities)
+}
 
 async function run() {
     const browser = await puppeteer.launch({
@@ -18,10 +97,6 @@ async function run() {
     async function doJob(config) {
 
         console.log('Doing ' + config.id)
-
-        if (availabilities[config.id] === undefined) {
-            availabilities[config.id] = false;
-        }
 
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
@@ -72,33 +147,25 @@ async function run() {
 
         await page.goto(config.url);
 
-        await page.waitFor(2000)
         try {
             await page.click('#didomi-notice-agree-button');
         } catch (e) {
         }
 
-        await page.waitFor(1000);
-
         if (config.alreadySeen === false) {
             await page.click('label[for=all_visit_motives-1]');
-            await page.waitFor(1000);
         } else if (config.alreadySeen === true) {
             await page.click('label[for=all_visit_motives-0]');
-            await page.waitFor(1000);
         }
 
         if (config.teleHealth === false) {
             await page.click('input[name="telehealth"][value="physicalAppointment"]');
-            await page.waitFor(1000);
         } else if (config.teleHealth === true) {
             await page.click('input[name="telehealth"][value="videoAppointment"]');
-            await page.waitFor(1000);
         }
 
         if (config.motiveCat) {
             await page.select('#booking_motive_category', config.motiveCat);
-            await page.waitFor(1000);
         }
 
         if (config.motive) {
@@ -106,7 +173,7 @@ async function run() {
         }
 
         const date = getNextSlot(await avail)
-        let availability = 0;
+        let newValue = null;
 
         await page.close()
 
@@ -117,40 +184,13 @@ async function run() {
             }
 
             if (date < maxDate) {
-                availability = 1;
+                newValue = date
             }
         }
 
         console.log('next date', config.id, date)
 
-        if (config.mail) {
-            const newValue = availability === 1 ? true : false;
-
-            if (availabilities[config.id] === false && newValue === true) {
-
-                  const transporter = nodemailer.createTransport({
-                    host: config.mail.smtp.host,
-                    port: config.mail.smtp.port,
-                    secure: config.mail.smtp.port === 465, // true for 465, false for other ports
-                    auth: {
-                      user: config.mail.smtp.user, // generated ethereal user
-                      pass: config.mail.smtp.password, // generated ethereal password
-                    }
-                  });
-
-                  const text = config.id + ' ' + moment(date).format('YYYY-MM-DD') + ' ' + config.url
-
-                await transporter.sendMail({
-                    from: '"Doctolib alert" <localhost>', // sender address
-                    to: config.mail.to, // list of receivers
-                    subject: "New Doctolib Availability", // Subject line
-                    text: text, // plain text body
-                    html: "<b>"+text+"</b>", // html body
-                  });
-            }
-
-            availabilities[config.id] = newValue;
-        }
+        availabilities.update(config.id, newValue)
     }
 
     const security = setTimeout(() => {
@@ -164,6 +204,7 @@ async function run() {
             await new Promise(resolve => setTimeout(resolve, 5000))
         } catch (e) {
             console.error(e)
+            availabilities.update(conf.id, e)
         }
     }
     await browser.close();
