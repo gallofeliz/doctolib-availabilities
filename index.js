@@ -4,7 +4,24 @@ const config = require('./config');
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
+const _ = require('lodash');
 const {EventEmitter} = require('events');
+
+function toStr(e) {
+    if (e instanceof Error) {
+        return e.toString()
+    }
+
+    if (e instanceof Array) {
+        return e.join()
+    }
+
+    if (e === null || e === undefined) {
+        return e
+    }
+
+    return e.toString()
+}
 
 class Availabilities extends EventEmitter {
     constructor() {
@@ -15,10 +32,7 @@ class Availabilities extends EventEmitter {
     update(id, value) {
         const previousValue = this.get(id)
 
-        const strPreviousValue = previousValue instanceof Object ? previousValue.toString() : previousValue
-        const strValue = value instanceof Object ? value.toString() : value
-
-        if (strPreviousValue === strValue) {
+        if (toStr(previousValue) === toStr(value)) {
             return
         }
 
@@ -59,9 +73,26 @@ class MailNotifier {
                 return
             }
 
-            const text = value instanceof Error
-                ? id + ' ' + value.toString()
-                : id + ' ' + moment(value).format('YYYY-MM-DD') + ' ' + checks.find(check => check.id === id).url
+            let text;
+
+            if (value instanceof Error) {
+                text = id + ' ' + value.toString()
+            } else {
+                text = id + ' (' + checks.find(check => check.id === id).url + ')'
+
+                const groups = _.groupBy(value, e => e.split('T')[0])
+
+                _.forEach(groups, (dates, date) => {
+                    text += "\n\n" + date + ' :'
+
+                    dates.forEach(d => {
+                        if (d.includes('T')) {
+                            d = d.split('T')[1] // Can be formatted by moment :)
+                        }
+                        text += '\n- ' + d
+                    })
+                })
+            }
 
             const subject = value instanceof Error
                 ? 'Doctolib Availability Error'
@@ -102,11 +133,29 @@ async function run() {
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
         await page.setViewport({ width: 1280, height: 800 })
+        await page.setRequestInterception(true);
 
         async function getAvail() {
 
             return new Promise((resolve) => {
                 let handler;
+
+                page.on('request', request => {
+                    const isXhr = ['xhr','fetch'].includes(request.resourceType())
+                    const isAvail = request.url().includes('availabilities.json')
+                    if (isXhr && isAvail){
+
+                        const lookAhead = typeof config.wantedBefore === 'number' ? config.wantedBefore : 14;
+
+                        request.continue({
+                            url: request.url().replace('limit=4', 'limit=' + lookAhead)
+                        })
+
+                    } else {
+                        request.continue()
+                    }
+                })
+
                 page.on('response', handler = response => {
                     const isXhr = ['xhr','fetch'].includes(response.request().resourceType())
                     const isAvail = response.url().includes('availabilities.json')
@@ -125,24 +174,56 @@ async function run() {
 
         const avail = getAvail()
 
-        function getNextSlot(avail) {
+
+        function getNextDates(avail) {
+            let slots = [];
+
             if (avail.next_slot) {
-                return avail.next_slot;
-            }
-
-            // Todo : use https://www.doctolib.fr/availabilities.json?start_date=2021-07-22&visit_motive_ids=2460309&agenda_ids=391618&insurance_sector=public&practice_ids=155768&limit=14
-
-            let excludes = []
-            if (config.refuseReplace) {
-                avail.availabilities.forEach(day => {
-                    Object.values(day.substitution || {}).forEach(sub => {
-                        excludes = excludes.concat(sub.slots)
-                    })
+                slots.push({
+                    replace: false,
+                    date: avail.next_slot
                 })
             }
 
-            const dispo = avail.availabilities.find(day => day.slots.filter(slot => !excludes.includes(slot)).length > 0)
-            return dispo ? dispo.date : null
+            (avail.availabilities || []).forEach(day => {
+                if (!day.slots || day.slots.length === 0) {
+                    return;
+                }
+
+                day.slots.forEach(slot => {
+                    slots.push({
+                        replace: false,
+                        date: slot
+                    })
+                })
+
+                Object.values(day.substitution || {}).forEach(substitution => {
+                    substitution.slots.forEach(subSlot => {
+                        let slot;
+                        if (slot = slots.find(slot => slot.date === subSlot)) {
+                            slot.replace = true;
+                        }
+                    })
+                })
+
+            })
+
+            slots = config.refuseReplace
+                ? slots.filter(s => s.replace === false)
+                : slots
+
+            let maxDate = config.wantedBefore;
+            if (typeof config.wantedBefore === 'number') {
+                maxDate = moment().add(config.wantedBefore, 'days').format('YYYY-MM-DD')
+            }
+
+            slots = slots.filter(s => moment(s.date).format('YYYY-MM-DD') <= moment(maxDate).format('YYYY-MM-DD'))
+
+            if (config.weekDays) {
+                slots = slots.filter(s => config.weekDays.includes(moment(s.date).format('ddd').toLowerCase()))
+            }
+
+            return slots.map(s => s.date)
         }
 
         await page.goto(config.url);
@@ -172,23 +253,13 @@ async function run() {
             await page.select('#booking_motive', config.motive);
         }
 
-        const date = getNextSlot(await avail)
-        let newValue = null;
+        const dates = getNextDates(await avail)
 
         await page.close()
 
-        if (date) {
-            let maxDate = config.wantedBefore;
-            if (typeof config.wantedBefore === 'number') {
-                maxDate = moment().add(config.wantedBefore, 'days').format('YYYY-MM-DD')
-            }
+        const newValue = dates.length > 0 ? dates : null;
 
-            if (date < maxDate) {
-                newValue = date
-            }
-        }
-
-        console.log('next date', config.id, date)
+        console.log('New value', newValue)
 
         availabilities.update(config.id, newValue)
     }

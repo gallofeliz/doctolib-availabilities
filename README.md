@@ -10,6 +10,7 @@ Configure yours doctors, for example one :
       url: 'https://www.doctolib.fr/medecin-generaliste/paris/mister-poop',
       teleHealth: true,
       wantedBefore: 7,
+      weekDays: ['mon', 'wed'],
       motive: '5536533'
   }
 ```

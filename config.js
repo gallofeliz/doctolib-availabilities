@@ -1,34 +1,23 @@
 module.exports = {
     frequency: 10 * 60,
-    mail: {
-        to: 'bizounours@gmail.com',
+        mail: {
+        to: 'me@gmail.com',
         smtp: {
            host: "smtp.gmail.com",
            port: 465,
-           user: "bonnenuitlespetits@gmail.com",
-           password: "Zzzzz"
+           user: "sender@gmail.com",
+           password: "verystrongpass"
         }
     },
     checks: [
         {
-            id: 'macron gyneco',
-            //alreadySeen: false,
-            refuseReplace: true,
-            //teleHealth: false,
-            //motiveCat: 'election',
-            motive: 'Echographie morphologique précoce du 2T-102',
-            url: 'https://www.doctolib.fr/gynecologue-obstetricien/neuilly-sur-seine/sabine-macron-neuilly-sur-seine',
-            wantedBefore: 14
-        },
-        {
-            id: 'macron psy',
-            //alreadySeen: false,
-            refuseReplace: true,
-            //teleHealth: false,
-            //motiveCat: 'election',
-            motive: 'Première consultation de psychologie-14',
-            url: 'https://www.doctolib.fr/psychologue/marcq-en-baroeul/valerie-carre',
-            wantedBefore: 21
-        },
+            id: 'generaliste2',
+            url: 'https://www.doctolib.fr/doctor-queen/paris/femme-medecin',
+            refuseReplace: false,
+            teleHealth: false,
+            motive: '3124',
+            wantedBefore: 7,
+            weekDays: ['mon', 'wed']
+        }
     ]
 };
