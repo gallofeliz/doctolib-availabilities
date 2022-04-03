@@ -74,9 +74,21 @@ class MailNotifier {
             }
 
             let text;
+            const attachments = []
 
             if (value instanceof Error) {
                 text = id + ' ' + value.toString()
+
+                if (value.screenshot) {
+                    text += '<img src="cid:screenshot"/>'
+
+                    attachments.push({
+                        filename: 'screenshot.jpg',
+                        content: value.screenshot,
+                        cid: 'screenshot'
+                    })
+                }
+
             } else {
                 text = id + ' (' + checks.find(check => check.id === id).url + ')'
 
@@ -104,6 +116,7 @@ class MailNotifier {
                 subject, // Subject line
                 text: text, // plain text body
                 html: "<b>"+text+"</b>", // html body
+                attachments
               })
         })
     }
@@ -125,11 +138,10 @@ async function run() {
         headless: process.env.HEADLESS === 'false' ? false : true
     });
 
-    async function doJob(config) {
+    async function doJob(config, page) {
 
         console.log('Doing ' + config.id)
 
-        const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
         await page.setViewport({ width: 1280, height: 800 })
@@ -255,8 +267,6 @@ async function run() {
 
         const dates = getNextDates(await avail)
 
-        await page.close()
-
         const newValue = dates.length > 0 ? dates : null;
 
         console.log('New value', newValue)
@@ -270,13 +280,23 @@ async function run() {
     }, config.checks.length * 60 * 1000)
 
     for(let conf of config.checks) {
+        let page
         try {
-            await doJob({...config, ...conf})
+            page = await browser.newPage();
+            await doJob({...config, ...conf}, page)
             await new Promise(resolve => setTimeout(resolve, 5000))
         } catch (e) {
             console.error(e)
+            if (page) {
+                e.screenshot = await page.screenshot()
+            }
+
             availabilities.update(conf.id, e)
         }
+        if (page) {
+            await page.close()
+        }
+
     }
     await browser.close();
     clearTimeout(security)
