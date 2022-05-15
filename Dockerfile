@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y chromium \
     && npm i puppeteer-core
 
-RUN npm i moment nodemailer lodash
+RUN npm i moment nodemailer lodash github:gallofeliz/js-libs
 
 COPY index.js ./
 

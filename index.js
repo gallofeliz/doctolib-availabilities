@@ -1,11 +1,12 @@
 #!/usr/bin/env nodejs
-
+const createLogger = require('js-libs/logger').default
 const config = require('./config');
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
 const _ = require('lodash');
 const {EventEmitter} = require('events');
+const logger = createLogger('info')
 
 function toStr(e) {
     if (e instanceof Error) {
@@ -140,8 +141,6 @@ async function run() {
 
     async function doJob(config, page) {
 
-        console.log('Doing ' + config.id)
-
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
         await page.setViewport({ width: 1280, height: 800 })
@@ -240,42 +239,52 @@ async function run() {
 
         await page.goto(config.url);
 
+        logger.info('Url loaded')
+
         try {
             await page.click('#didomi-notice-agree-button');
+            logger.info('Agree Button clicked')
         } catch (e) {
+            logger.info('Agree Button no clicked (error)', {e})
         }
 
         if (config.alreadySeen === false) {
             await page.click('label[for=all_visit_motives-1]');
+            logger.info('AlreadySeen false selected')
         } else if (config.alreadySeen === true) {
             await page.click('label[for=all_visit_motives-0]');
+            logger.info('AlreadySeen true selected')
         }
 
         if (config.teleHealth === false) {
             await page.click('input[name="telehealth"][value="physicalAppointment"]');
+            logger.info('Telehealth false selected')
         } else if (config.teleHealth === true) {
             await page.click('input[name="telehealth"][value="videoAppointment"]');
+            logger.info('Telehealth true selected')
         }
 
         if (config.motiveCat) {
             await page.select('#booking_motive_category', config.motiveCat);
+            logger.info('MotiveCat selected')
         }
 
         if (config.motive) {
             await page.select('#booking_motive', config.motive);
+            logger.info('Motive selected')
         }
 
         const dates = getNextDates(await avail)
 
         const newValue = dates.length > 0 ? dates : null;
 
-        console.log('New value', newValue)
+        logger.info('New value', newValue)
 
         availabilities.update(config.id, newValue)
     }
 
     const security = setTimeout(() => {
-        console.log('Closing browser (security anti freeze)')
+        logger.info('Closing browser (security anti freeze)')
         browser.close()
     }, config.checks.length * 60 * 1000)
 
@@ -283,15 +292,20 @@ async function run() {
         let page
         try {
             page = await browser.newPage();
+            logger.info('Let\'s go !', { status: 'running', id: conf.id })
             await doJob({...config, ...conf}, page)
             await new Promise(resolve => setTimeout(resolve, 5000))
+            logger.info('Oh yeah !', { status: 'done', id: conf.id })
         } catch (e) {
-            console.error(e)
-            if (page) {
-                e.screenshot = await page.screenshot()
-            }
-
-            availabilities.update(conf.id, e)
+            logger.error(
+                e.toString(),
+                {
+                    status: 'failed',
+                    id: conf.id,
+                    e,
+                    screenshot: page ? 'data:image/png;base64,' + await page.screenshot({encoding: 'base64'}) : null
+                }
+            )
         }
         if (page) {
             await page.close()
