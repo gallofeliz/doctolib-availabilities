@@ -172,7 +172,9 @@ async function run() {
                     const isAvail = response.url().includes('availabilities.json')
                     if (isXhr && isAvail){
 
-                        logger.debug('Response', {status: response.status()})
+                        if (response.status() !== 200) {
+                            throw new Error('Response error : ' + await response.text())
+                        }
 
                         response.text().then(text => resolve(JSON.parse(text)))
                         page.off('response', handler)
