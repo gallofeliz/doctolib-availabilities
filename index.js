@@ -1,12 +1,17 @@
 #!/usr/bin/env nodejs
 const createLogger = require('js-libs/logger').default
-const config = require('./config');
+const loadConfig = require('js-libs/config').default
+const config = loadConfig({ filename: 'config.js' })
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
 const _ = require('lodash');
 const {EventEmitter} = require('events');
-const logger = createLogger('debug')
+const logger = createLogger(config.log?.level || 'info')
+const uuid4 = require('uuid').v4
+const {handleExitSignals} = require('js-libs/exit-handle')
+
+handleExitSignals()
 
 function toStr(e) {
     if (e instanceof Error) {
@@ -139,7 +144,7 @@ async function run() {
         headless: process.env.HEADLESS === 'false' ? false : true
     });
 
-    async function doJob(config, page) {
+    async function doJob(config, page, logger) {
 
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
 
@@ -303,18 +308,21 @@ async function run() {
 
     for(let conf of config.checks) {
         let page
+        const sessionLogger = logger.child({
+            id: conf.id,
+            sessionId: uuid4()
+        })
         try {
             page = await browser.newPage();
-            logger.info('Let\'s go !', { status: 'running', id: conf.id })
-            await doJob({...config, ...conf}, page)
+            sessionLogger.info('Let\'s go !', { status: 'running' })
+            await doJob({...config, ...conf}, page, sessionLogger)
             await new Promise(resolve => setTimeout(resolve, 5000))
-            logger.info('Oh yeah !', { status: 'done', id: conf.id })
+            sessionLogger.info('Oh yeah !', { status: 'done' })
         } catch (e) {
-            logger.error(
+            sessionLogger.error(
                 e.toString(),
                 {
                     status: 'failed',
-                    id: conf.id,
                     e,
                     screenshot: page ? 'data:image/png;base64,' + await page.screenshot({encoding: 'base64'}) : null
                 }

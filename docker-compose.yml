@@ -10,3 +10,4 @@ services:
     environment:
       - DISPLAY=:0
       - HEADLESS
+      - LOG_LEVEL=debug
