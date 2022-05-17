@@ -278,7 +278,7 @@ async function run() {
 
         const newValue = dates.length > 0 ? dates : null;
 
-        logger.info('New value', newValue)
+        logger.info('New value', {newValue})
 
         availabilities.update(config.id, newValue)
     }
