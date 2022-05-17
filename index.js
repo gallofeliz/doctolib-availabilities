@@ -172,6 +172,8 @@ async function run() {
                     const isAvail = response.url().includes('availabilities.json')
                     if (isXhr && isAvail){
 
+                        logger.debug('Response', response.status())
+
                         response.text().then(text => resolve(JSON.parse(text)))
                         page.off('response', handler)
                     }
@@ -190,6 +192,10 @@ async function run() {
             let slots = [];
 
             logger.debug('Reading avail', {avail})
+
+            if (avail.error) {
+                throw new Error(JSON.stringify(avail.error))
+            }
 
             if (avail.next_slot) {
                 slots.push({
