@@ -167,7 +167,7 @@ async function run() {
                     }
                 })
 
-                page.on('response', handler = response => {
+                page.on('response', handler = async response => {
                     const isXhr = ['xhr','fetch'].includes(response.request().resourceType())
                     const isAvail = response.url().includes('availabilities.json')
                     if (isXhr && isAvail){
@@ -176,7 +176,8 @@ async function run() {
                             throw new Error('Response error : ' + await response.text())
                         }
 
-                        response.text().then(text => resolve(JSON.parse(text)))
+                        resolve(JSON.parse(await response.text()))
+
                         page.off('response', handler)
                     }
                 })
