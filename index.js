@@ -172,7 +172,7 @@ async function run() {
                     const isAvail = response.url().includes('availabilities.json')
                     if (isXhr && isAvail){
 
-                        logger.debug('Response', response.status())
+                        logger.debug('Response', {status: response.status()})
 
                         response.text().then(text => resolve(JSON.parse(text)))
                         page.off('response', handler)
