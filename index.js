@@ -6,7 +6,7 @@ const moment = require('moment');
 const nodemailer = require("nodemailer");
 const _ = require('lodash');
 const {EventEmitter} = require('events');
-const logger = createLogger('info')
+const logger = createLogger('debug')
 
 function toStr(e) {
     if (e instanceof Error) {
@@ -189,6 +189,8 @@ async function run() {
         function getNextDates(avail) {
             let slots = [];
 
+            logger.debug('Reading avail', {avail})
+
             if (avail.next_slot) {
                 slots.push({
                     replace: false,
@@ -275,6 +277,8 @@ async function run() {
         }
 
         const dates = getNextDates(await avail)
+
+        logger.debug('Get next dates', {dates})
 
         const newValue = dates.length > 0 ? dates : null;
 
