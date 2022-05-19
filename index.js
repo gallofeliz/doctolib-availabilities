@@ -323,8 +323,9 @@ async function run() {
                 e.toString(),
                 {
                     status: 'failed',
-                    e,
-                    screenshot: page ? 'data:image/png;base64,' + await page.screenshot({encoding: 'base64'}) : null
+                    e//,
+                    // Bad idea
+                    //screenshot: page ? 'data:image/png;base64,' + await page.screenshot({encoding: 'base64'}) : null
                 }
             )
         }
