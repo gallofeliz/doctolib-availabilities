@@ -153,7 +153,7 @@ async function run() {
 
         async function getAvail() {
 
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 let handler;
 
                 page.on('request', request => {
@@ -178,7 +178,7 @@ async function run() {
                     if (isXhr && isAvail){
 
                         if (response.status() !== 200) {
-                            throw new Error('Response error : ' + await response.text())
+                            return reject(new Error('Response error : ' + await response.text()))
                         }
 
                         resolve(JSON.parse(await response.text()))
