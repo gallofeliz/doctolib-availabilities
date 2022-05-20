@@ -16,4 +16,4 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 
 ENV TZ="Europe/Paris"
 
-CMD exec node index.js
+CMD node index.js
