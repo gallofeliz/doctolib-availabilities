@@ -343,4 +343,4 @@ async function run() {
     setTimeout(run, (config.frequency || 10 * 60) * 1000);
 }
 
-run();
+setTimeout(run, (config.frequency || 10 * 60) * 1000);
