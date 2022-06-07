@@ -256,6 +256,7 @@ async function run() {
         await page.goto(config.url);
 
         logger.info('Url loaded')
+        await page.waitForSelector('#booking-content');
 
         try {
             await page.click('#didomi-notice-agree-button');
@@ -328,6 +329,9 @@ async function run() {
                     //screenshot: page ? 'data:image/png;base64,' + await page.screenshot({encoding: 'base64'}) : null
                 }
             )
+            try {
+                await page.screenshot({path: '/tmp/debug.png'})
+            } catch {}
         }
         if (page) {
             await page.close()
