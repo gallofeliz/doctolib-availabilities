@@ -116,14 +116,18 @@ class MailNotifier {
                 ? 'Doctolib Availability Error'
                 : 'New Doctolib Availability'
 
-            await this.transporter.sendMail({
-                from: '"Doctolib alert" <localhost>', // sender address
-                to: this.mailConfig.to, // list of receivers
-                subject, // Subject line
-                text: text, // plain text body
-                html: "<b>"+text+"</b>", // html body
-                attachments
-              })
+            try {
+                await this.transporter.sendMail({
+                    from: '"Doctolib alert" <localhost>', // sender address
+                    to: this.mailConfig.to, // list of receivers
+                    subject, // Subject line
+                    text: text, // plain text body
+                    html: "<b>"+text+"</b>", // html body
+                    attachments
+                  })
+            } catch (e) {
+                logger.error('Mail error', {e})
+            }
         })
     }
 }
