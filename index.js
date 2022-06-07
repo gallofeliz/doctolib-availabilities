@@ -347,4 +347,4 @@ async function run() {
     setTimeout(run, (config.frequency || 10 * 60) * 1000);
 }
 
-setTimeout(run, (config.frequency || 10 * 60) * 1000);
+setTimeout(run, (Math.min(config.frequency, 1) || 10 * 60) * 1000);
