@@ -118,7 +118,7 @@ class MailNotifier {
 
             try {
                 await this.transporter.sendMail({
-                    from: '"Doctolib alert" <localhost>', // sender address
+                    from: this.mailConfig.from || '"Doctolib alert" <localhost>', // sender address
                     to: this.mailConfig.to, // list of receivers
                     subject, // Subject line
                     text: text, // plain text body
