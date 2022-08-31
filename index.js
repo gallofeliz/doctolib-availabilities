@@ -258,41 +258,45 @@ async function run() {
         }
 
         await page.goto(config.url);
-
         logger.info('Url loaded')
-        await page.waitForSelector('#booking-content');
 
-        try {
-            await page.click('#didomi-notice-agree-button');
-            logger.info('Agree Button clicked')
-        } catch (e) {
-            logger.info('Agree Button no clicked (error)', {e})
-        }
+        if (!config.url.includes('booking/availabilities?')) {
 
-        if (config.alreadySeen === false) {
-            await page.click('label[for=all_visit_motives-1]');
-            logger.info('AlreadySeen false selected')
-        } else if (config.alreadySeen === true) {
-            await page.click('label[for=all_visit_motives-0]');
-            logger.info('AlreadySeen true selected')
-        }
+            await page.waitForSelector('#booking-content');
 
-        if (config.teleHealth === false) {
-            await page.click('input[name="telehealth"][value="physicalAppointment"]');
-            logger.info('Telehealth false selected')
-        } else if (config.teleHealth === true) {
-            await page.click('input[name="telehealth"][value="videoAppointment"]');
-            logger.info('Telehealth true selected')
-        }
+            try {
+                await page.click('#didomi-notice-agree-button');
+                logger.info('Agree Button clicked')
+            } catch (e) {
+                logger.info('Agree Button no clicked (error)', {e})
+            }
 
-        if (config.motiveCat) {
-            await page.select('#booking_motive_category', config.motiveCat);
-            logger.info('MotiveCat selected')
-        }
+            if (config.alreadySeen === false) {
+                await page.click('label[for=all_visit_motives-1]');
+                logger.info('AlreadySeen false selected')
+            } else if (config.alreadySeen === true) {
+                await page.click('label[for=all_visit_motives-0]');
+                logger.info('AlreadySeen true selected')
+            }
 
-        if (config.motive) {
-            await page.select('#booking_motive', config.motive);
-            logger.info('Motive selected')
+            if (config.teleHealth === false) {
+                await page.click('input[name="telehealth"][value="physicalAppointment"]');
+                logger.info('Telehealth false selected')
+            } else if (config.teleHealth === true) {
+                await page.click('input[name="telehealth"][value="videoAppointment"]');
+                logger.info('Telehealth true selected')
+            }
+
+            if (config.motiveCat) {
+                await page.select('#booking_motive_category', config.motiveCat);
+                logger.info('MotiveCat selected')
+            }
+
+            if (config.motive) {
+                await page.select('#booking_motive', config.motive);
+                logger.info('Motive selected')
+            }
+
         }
 
         const dates = getNextDates(await avail)
