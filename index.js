@@ -88,6 +88,14 @@ const api = new HttpServer({
                 handler(req, res) {
                     res.sendFile('/tmp/debug.png')
                 }
+            },
+            {
+                method: 'GET',
+                path: '/debug/run',
+                handler(req, res) {
+                    run()
+                    res.end()
+                }
             }
         ]
     }
@@ -240,17 +248,25 @@ async function run() {
         async function getAvail() {
 
             return new Promise((resolve, reject) => {
-                let handler;
+                let handler1;
+                let handler2;
 
-                page.on('request', request => {
+                page.on('request', handler1 = request => {
                     const isXhr = ['xhr','fetch'].includes(request.resourceType())
                     const isAvail = request.url().includes('availabilities.json')
+
                     if (isXhr && isAvail){
 
                         const lookAhead = typeof config.wantedBefore === 'number' ? config.wantedBefore : 14;
 
+                        page.off('request', handler1)
+
+                        const newUrl = request.url().replace('limit=', 'limit=' + lookAhead + '&')
+
+                        logger.debug('Interception ' + request.url() + ' ; sending ' + newUrl)
+
                         request.continue({
-                            url: request.url().replace('limit=4', 'limit=' + lookAhead)
+                            url: newUrl
                         })
 
                     } else {
@@ -258,22 +274,24 @@ async function run() {
                     }
                 })
 
-                page.on('response', handler = async response => {
+                page.on('response', handler2 = async response => {
                     const isXhr = ['xhr','fetch'].includes(response.request().resourceType())
                     const isAvail = response.url().includes('availabilities.json')
+
                     if (isXhr && isAvail){
 
                         if (response.status() !== 200) {
                             return reject(new Error('Response error : ' + await response.text()))
                         }
 
+                        logger.debug('I resolved the solution !!')
                         resolve(JSON.parse(await response.text()))
 
-                        page.off('response', handler)
+                        page.off('response', handler2)
                     }
                 })
 
-                setTimeout(() => page.off('response', handler), 60 * 1000)
+                setTimeout(() => page.off('response', handler2), 60 * 1000)
 
             })
 
