@@ -245,26 +245,36 @@ async function run() {
         await page.setViewport({ width: 1280, height: 800 })
         await page.setRequestInterception(true);
 
+        let intercepted = false;
+
         async function getAvail() {
 
             return new Promise((resolve, reject) => {
                 let handler1;
                 let handler2;
-                done = false
 
                 page.on('request', handler1 = request => {
                     const isXhr = ['xhr','fetch'].includes(request.resourceType())
                     const isAvail = request.url().includes('availabilities.json')
 
+
+                    if (intercepted) {
+                        logger.debug('network abort request ' + request.url())
+                        request.abort()
+                        return
+                    }
+
                     logger.debug('network request ' + request.url())
 
-                    if (isXhr && isAvail && !done){
+                    if (isXhr && isAvail){
 
                         const lookAhead = typeof config.wantedBefore === 'number' ? config.wantedBefore : 14;
 
                         const newUrl = request.url().replace('limit=', 'limit=' + lookAhead + '&')
 
                         logger.debug('Interception ' + request.url() + ' ; sending ' + newUrl)
+
+                        intercepted = true
 
                         request.continue({
                             url: newUrl
@@ -281,7 +291,7 @@ async function run() {
 
                     logger.debug('network response ' + response.request().url())
 
-                    if (isXhr && isAvail && !done){
+                    if (isXhr && isAvail){
 
                         if (response.status() !== 200) {
                             return reject(new Error('Response error : ' + await response.text()))
@@ -289,8 +299,6 @@ async function run() {
 
                         logger.debug('I resolved the solution !!')
                         resolve(JSON.parse(await response.text()))
-
-                        done = true
                     }
                 })
 
@@ -360,46 +368,54 @@ async function run() {
             return slots.map(s => s.date)
         }
 
-        await page.goto(config.url);
-        logger.info('Url loaded')
+        try {
+            await page.goto(config.url);
+            logger.info('Url loaded')
 
-        if (!config.url.includes('booking/availabilities?')) {
+            if (!config.url.includes('booking/availabilities?')) {
 
-            await page.waitForSelector('#booking-content');
+                await page.waitForSelector('#booking-content');
 
-            try {
-                await page.click('#didomi-notice-agree-button');
-                logger.info('Agree Button clicked')
-            } catch (e) {
-                logger.info('Agree Button no clicked (error)', {e})
+                try {
+                    await page.click('#didomi-notice-agree-button');
+                    logger.info('Agree Button clicked')
+                } catch (e) {
+                    logger.info('Agree Button no clicked (error)', {e})
+                }
+
+                if (config.alreadySeen === false) {
+                    await page.click('label[for=all_visit_motives-1]');
+                    logger.info('AlreadySeen false selected')
+                } else if (config.alreadySeen === true) {
+                    await page.click('label[for=all_visit_motives-0]');
+                    logger.info('AlreadySeen true selected')
+                }
+
+                if (config.teleHealth === false) {
+                    await page.click('input[name="telehealth"][value="physicalAppointment"]');
+                    logger.info('Telehealth false selected')
+                } else if (config.teleHealth === true) {
+                    await page.click('input[name="telehealth"][value="videoAppointment"]');
+                    logger.info('Telehealth true selected')
+                }
+
+                if (config.motiveCat) {
+                    await page.select('#booking_motive_category', config.motiveCat);
+                    logger.info('MotiveCat selected')
+                }
+
+                if (config.motive) {
+                    await page.select('#booking_motive', config.motive);
+                    logger.info('Motive selected')
+                }
+
             }
-
-            if (config.alreadySeen === false) {
-                await page.click('label[for=all_visit_motives-1]');
-                logger.info('AlreadySeen false selected')
-            } else if (config.alreadySeen === true) {
-                await page.click('label[for=all_visit_motives-0]');
-                logger.info('AlreadySeen true selected')
+        } catch (e) {
+            if (intercepted) {
+                logger.notice('Goto error', {e})
+            } else {
+                throw e
             }
-
-            if (config.teleHealth === false) {
-                await page.click('input[name="telehealth"][value="physicalAppointment"]');
-                logger.info('Telehealth false selected')
-            } else if (config.teleHealth === true) {
-                await page.click('input[name="telehealth"][value="videoAppointment"]');
-                logger.info('Telehealth true selected')
-            }
-
-            if (config.motiveCat) {
-                await page.select('#booking_motive_category', config.motiveCat);
-                logger.info('MotiveCat selected')
-            }
-
-            if (config.motive) {
-                await page.select('#booking_motive', config.motive);
-                logger.info('Motive selected')
-            }
-
         }
 
         const dates = getNextDates(await avail)
