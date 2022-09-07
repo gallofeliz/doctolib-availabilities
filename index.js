@@ -10,8 +10,90 @@ const {EventEmitter} = require('events');
 const logger = createLogger(config.log?.level || 'info')
 const uuid4 = require('uuid').v4
 const {handleExitSignals} = require('js-libs/exit-handle')
+const fs = require('fs')
+const checksPath = '/data/checks.json'
+
+function loadChecks() {
+    try {
+        return require(checksPath)
+    } catch (e) {
+        if (e.code !== 'MODULE_NOT_FOUND') {
+            throw e
+        }
+        return []
+    }
+}
+
+function saveChecks() {
+    fs.writeFileSync(checksPath, JSON.stringify(checks))
+}
+
+const checks = loadChecks()
 
 handleExitSignals()
+
+const HttpServer = require('js-libs/http-server').default
+
+const api = new HttpServer({
+    port: '80',
+    webUiFilesPath: 'webui',
+    logger,
+    api: {
+        prefix: 'api',
+        routes: [
+            {
+                method: 'GET',
+                path: '/checks',
+                handler(req, res) {
+                    res.send(checks)
+                }
+            },
+            {
+                method: 'POST',
+                path: '/checks',
+                handler(req, res) {
+                    const check = req.body
+
+                    if (!check.url || !check.id || typeof check.enabled != 'boolean' || !check.wantedBefore ) {
+                        throw new Error('Invalid check')
+                    }
+
+                    checks.push(check)
+                    saveChecks()
+                    res.status(201)
+                    res.end()
+                }
+            },
+            {
+                method: 'PUT',
+                path: '/checks/:id',
+                handler(req, res) {
+                    const check = req.body
+                    const id = req.params.id
+
+                    if (!check.url || !check.id || typeof check.enabled != 'boolean' || !check.wantedBefore ) {
+                        throw new Error('Invalid check')
+                    }
+
+                    checks.splice(checks.indexOf(checks.find(check => check.id === id)), 1, check)
+
+                    saveChecks()
+                    res.status(201)
+                    res.end()
+                }
+            },
+            {
+                method: 'GET',
+                path: '/last-error-snapshot',
+                handler(req, res) {
+                    res.sendFile('/tmp/debug.png')
+                }
+            }
+        ]
+    }
+})
+
+api.start()
 
 function toStr(e) {
     if (e instanceof Error) {
@@ -136,7 +218,7 @@ const availabilities = new Availabilities
 
 if (config.mail) {
     const mailNotifier = new MailNotifier(config.mail)
-    mailNotifier.subscribe(config.checks, availabilities)
+    mailNotifier.subscribe(checks, availabilities)
 }
 
 async function run() {
@@ -310,12 +392,14 @@ async function run() {
         availabilities.update(config.id, newValue)
     }
 
+    const enabledChecks = checks.filter(check => check.enabled)
+
     const security = setTimeout(() => {
         logger.info('Closing browser (security anti freeze)')
         browser.close()
-    }, config.checks.length * 60 * 1000)
+    }, enabledChecks.length * 60 * 1000)
 
-    for(let conf of config.checks) {
+    for(let conf of enabledChecks) {
         let page
         const sessionLogger = logger.child({
             id: conf.id,

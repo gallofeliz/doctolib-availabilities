@@ -1,23 +1,12 @@
 module.exports = {
     frequency: 10 * 60,
-        mail: {
-        to: 'me@gmail.com',
+    mail: {
+        to: 'you@yourmail.com',
         smtp: {
-           host: "smtp.gmail.com",
+           host: "smtp.mail.com",
            port: 465,
-           user: "sender@gmail.com",
-           password: "verystrongpass"
+           user: "sender@mail.com",
+           password: "verysecret"
         }
-    },
-    checks: [
-        {
-            id: 'generaliste2',
-            url: 'https://www.doctolib.fr/doctor-queen/paris/femme-medecin',
-            refuseReplace: false,
-            teleHealth: false,
-            motive: '3124',
-            wantedBefore: 7,
-            weekDays: ['mon', 'wed']
-        }
-    ]
+    }
 };

@@ -11,3 +11,5 @@ services:
       - DISPLAY=:0
       - HEADLESS
       - LOG_LEVEL=debug
+    ports:
+      - 8080:80

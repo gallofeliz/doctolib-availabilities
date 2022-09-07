@@ -23,6 +23,10 @@ Example of mail :
 
 You can so easily click on the link in your mail and check that the hour is good for you and book !
 
+## NEW
+
+Now UI ! Handle your doctors with your browser ! Youpi !!
+
 See docker-compose for an example.
 
 ## Note
