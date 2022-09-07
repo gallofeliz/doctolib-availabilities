@@ -250,16 +250,17 @@ async function run() {
             return new Promise((resolve, reject) => {
                 let handler1;
                 let handler2;
+                done = false
 
                 page.on('request', handler1 = request => {
                     const isXhr = ['xhr','fetch'].includes(request.resourceType())
                     const isAvail = request.url().includes('availabilities.json')
 
-                    if (isXhr && isAvail){
+                    logger.debug('network request ' + request.url())
+
+                    if (isXhr && isAvail && !done){
 
                         const lookAhead = typeof config.wantedBefore === 'number' ? config.wantedBefore : 14;
-
-                        page.off('request', handler1)
 
                         const newUrl = request.url().replace('limit=', 'limit=' + lookAhead + '&')
 
@@ -278,7 +279,9 @@ async function run() {
                     const isXhr = ['xhr','fetch'].includes(response.request().resourceType())
                     const isAvail = response.url().includes('availabilities.json')
 
-                    if (isXhr && isAvail){
+                    logger.debug('network response ' + response.request().url())
+
+                    if (isXhr && isAvail && !done){
 
                         if (response.status() !== 200) {
                             return reject(new Error('Response error : ' + await response.text()))
@@ -287,7 +290,7 @@ async function run() {
                         logger.debug('I resolved the solution !!')
                         resolve(JSON.parse(await response.text()))
 
-                        page.off('response', handler2)
+                        done = true
                     }
                 })
 
