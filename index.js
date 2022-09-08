@@ -83,6 +83,30 @@ const api = new HttpServer({
                 }
             },
             {
+                method: 'POST',
+                path: '/debug/check',
+                async handler(req, res) {
+                    const check = req.body
+
+                    if (!check.url || check.enabled !== true || !check.wantedBefore ) {
+                        throw new Error('Invalid check')
+                    }
+
+                    try {
+                        const newValue = await run(check)
+                        res.send({
+                            success: true,
+                            newValue
+                        })
+                    } catch (e) {
+                        res.send({
+                            success: false,
+                            error: e
+                        })
+                    }
+                }
+            },
+            {
                 method: 'GET',
                 path: '/last-error-snapshot',
                 handler(req, res) {
@@ -229,7 +253,7 @@ if (config.mail) {
     mailNotifier.subscribe(checks, availabilities)
 }
 
-async function run() {
+async function run(testConf) {
     const browser = await puppeteer.launch({
         defaultViewport: null,
         executablePath: process.env.CHROMIUM_PATH,
@@ -426,15 +450,19 @@ async function run() {
 
         logger.info('New value', {newValue})
 
-        availabilities.update(config.id, newValue)
+        return newValue
     }
 
-    const enabledChecks = checks.filter(check => check.enabled)
+    const enabledChecks = testConf
+        ? [testConf]
+        : checks.filter(check => check.enabled)
 
     const security = setTimeout(() => {
         logger.info('Closing browser (security anti freeze)')
         browser.close()
     }, enabledChecks.length * 60 * 1000)
+
+    let testValue
 
     for(let conf of enabledChecks) {
         let page
@@ -445,10 +473,18 @@ async function run() {
         try {
             page = await browser.newPage();
             sessionLogger.info('Let\'s go !', { status: 'running' })
-            await doJob({...config, ...conf}, page, sessionLogger)
+            const newValue = await doJob({...config, ...conf}, page, sessionLogger)
+            if (!testConf) {
+                availabilities.update(conf.id, newValue)
+            } else {
+                testValue = newValue
+            }
             await new Promise(resolve => setTimeout(resolve, 5000))
             sessionLogger.info('Oh yeah !', { status: 'done' })
         } catch (e) {
+            if (testConf) {
+                testValue = e
+            }
             sessionLogger.error(
                 e.toString(),
                 {
@@ -469,7 +505,14 @@ async function run() {
     }
     await browser.close();
     clearTimeout(security)
-    setTimeout(run, (config.frequency || 10 * 60) * 1000);
+    if (!testConf) {
+        setTimeout(run, (config.frequency || 10 * 60) * 1000);
+    } else {
+        if (testValue instanceof Error) {
+            throw testValue
+        }
+        return testValue
+    }
 }
 
 setTimeout(run, (Math.min(config.frequency, 1) || 10 * 60) * 1000);

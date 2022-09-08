@@ -3,7 +3,7 @@
 
     <button @click="showAddEditModal()" class="btn-primary mb-4 btn">Add check</button>
 
-      <b-table striped hover :items="checks" :fields="['id', 'status', 'code', { key: 'actions', label: 'Actions' }]">
+      <b-table striped hover :items="checks" :fields="['id', 'status', 'code', { key: 'actions', label: 'Actions' }]" :sort-by="'enabled'" :sort-desc="true">
 
         <template #cell(status)="row">
             <span v-if="!row.item.enabled" class="badge badge-secondary">
@@ -42,6 +42,9 @@
       </div>
       <template #modal-footer>
         <div>
+          <b-button size="sm" class="mr-2" @click="addEditModalTest()">
+            Test<span v-if="addEditModalData.testing"> (running...)</span>
+          </b-button>
           <b-button size="sm" class="mr-2" variant="primary" @click="addEditModalSave()">
             Save
           </b-button>
@@ -74,7 +77,8 @@ export default {
             id,
             code: id
                 ? JSON.stringify(this.checks.find(check => check.id === id), undefined, 2)
-                : JSON.stringify({id: '', url: '', wantedBefore: 14, enabled: true}, undefined, 2)
+                : JSON.stringify({id: '', url: '', wantedBefore: 14, enabled: true}, undefined, 2),
+            testing: false
         }
         this.$refs['addEditModal'].show()
     },
@@ -103,6 +107,30 @@ export default {
 
         this.$refs['addEditModal'].hide()
         this.loadChecks()
+    },
+    async addEditModalTest() {
+        const source = JSON.parse(this.addEditModalData.code)
+        this.addEditModalData.testing = true
+        const res = await fetch('/api/debug/check', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(source)
+        })
+        this.addEditModalData.testing = false
+
+        const value = await res.json()
+
+        if (!value.success) {
+            alert('Error : ' + JSON.stringify(value.error))
+        } else {
+            if (!value.newValue) {
+                alert('No error but no availabilities ; can be normal or misconfiguration')
+            } else {
+                alert('Oh yeah you have already availabilities !!! ' + JSON.stringify(value.newValue))
+            }
+        }
     }
   }
 }

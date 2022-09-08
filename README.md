@@ -1,5 +1,7 @@
 # doctolib-availabilities
 
+![](https://github.com/gallofeliz/doctolib-availabilities/blob/master/doctolib.png)
+
 Notify (to mail but you can easily plug another notifier) you when a close date is available for your doctor.
 
 Configure yours doctors, for example one :
@@ -34,3 +36,5 @@ See docker-compose for an example.
 Turn off headless with `sudo HEADLESS=false docker-compose up`
 
 Display (X11) support is not mandatory in default case of headless true.
+
+The code is ugly (the developer seems to be very noob). It should be refactorised but for the moment I don't have time to spend on it.
