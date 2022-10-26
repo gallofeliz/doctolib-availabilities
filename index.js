@@ -12,6 +12,7 @@ const uuid4 = require('uuid').v4
 const {handleExitSignals} = require('js-libs/exit-handle')
 const fs = require('fs')
 const checksPath = '/data/checks.json'
+const got = require('got')
 
 function loadChecks() {
     try {
@@ -291,6 +292,16 @@ async function run(testConf) {
         await page.setRequestInterception(true);
 
         let intercepted = false;
+        const isHapicare = config.url.includes('hapicare.fr')
+
+        if (isHapicare) {
+            const data = await got(config.url).json()
+            const val = data.firstAvailabilityDate ? [data.firstAvailabilityDate] : null
+
+            logger.info('New value', {val})
+
+            return val
+        }
 
         async function getAvail() {
 
