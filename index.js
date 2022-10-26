@@ -107,6 +107,27 @@ const api = new HttpServer({
                 }
             },
             {
+                method: 'PATCH',
+                path: '/batch/checks',
+                async handler(req, res) {
+                    const ids = req.query.ids
+                    const patch = req.body
+
+                    const targetChecks = ids.map(id => checks.find(check => check.id === id))
+
+                    if (targetChecks.includes(undefined)) {
+                        throw new Error('Missing check')
+                    }
+
+                    targetChecks.forEach(check => {
+                        Object.assign(check, patch)
+                    })
+
+                    saveChecks()
+                    res.status(201).end()
+                }
+            },
+            {
                 method: 'GET',
                 path: '/last-error-snapshot',
                 handler(req, res) {

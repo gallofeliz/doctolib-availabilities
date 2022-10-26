@@ -1,9 +1,21 @@
 <template>
   <div v-if="checks" class="container-fluid">
 
-    <button @click="showAddEditModal()" class="btn-primary mb-4 btn">Add check</button>
+    <p><button @click="showAddEditModal()" class="btn-primary mb-4 btn">Add check</button></p>
 
-      <b-table striped hover :items="checks" :fields="['id', 'status', 'code', { key: 'actions', label: 'Actions' }]" :sort-by="'enabled'" :sort-desc="true">
+      <p>
+        <label><input type="checkbox" :checked="allSelected" @click="selectOrUnselectToogle" /> (Un)Select All</label>
+        and
+        <button @click="setEnableSelected(true)" class="btn-primary btn btn-sm">Enable</button>
+        or
+        <button @click="setEnableSelected(false)" class="btn-primary btn btn-sm">Disable</button>
+      </p>
+
+      <b-table striped hover :items="checks" :fields="[{ key: 'select', label: '' }, 'id', 'status', 'code', { key: 'actions', label: 'Actions' }]" :sort-by="'enabled'" :sort-desc="true">
+
+        <template #cell(select)="row">
+            <input type="checkbox" v-model="selected[row.item.id]" />
+        </template>
 
         <template #cell(status)="row">
             <span v-if="!row.item.enabled" class="badge badge-secondary">
@@ -62,15 +74,39 @@ export default {
   data() {
     return {
         checks: null,
-        addEditModalData: {}
+        addEditModalData: {},
+        selected: {}
     }
   },
   created() {
     this.loadChecks()
   },
+  computed: {
+    allSelected() {
+      for (const id in this.selected) {
+        if (!this.selected[id]) {
+          return false
+        }
+      }
+      return true
+    }
+  },
   methods: {
     async loadChecks() {
         this.checks = await (await fetch('/api/checks')).json()
+        this.selected = this.checks.reduce((selected, check) => ({...selected, [check.id]: false}), {})
+    },
+    selectOrUnselectToogle() {
+      if (this.allSelected) {
+        this.selectOrUnselectAll(false)
+      } else {
+        this.selectOrUnselectAll(true)
+      }
+    },
+    selectOrUnselectAll(value) {
+      for (const id in this.selected) {
+        this.selected[id] = value
+      }
     },
     showAddEditModal(id) {
         this.addEditModalData = {
@@ -81,6 +117,27 @@ export default {
             testing: false
         }
         this.$refs['addEditModal'].show()
+    },
+    async setEnableSelected(value) {
+      const selectedIds = Object.keys(this.selected).filter(id => this.selected[id])
+
+      if (!selectedIds.length) {
+        return
+      }
+
+      const res = await fetch('/api/batch/checks?ids=' + selectedIds.map(v => encodeURIComponent(v)).join('&ids='), {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({enabled: value})
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed fetch')
+      }
+
+      this.loadChecks()
     },
     async addEditModalSave() {
         const source = JSON.parse(this.addEditModalData.code)
