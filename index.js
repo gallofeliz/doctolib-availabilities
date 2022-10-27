@@ -295,12 +295,34 @@ async function run(testConf) {
         const isHapicare = config.url.includes('hapicare.fr')
 
         if (isHapicare) {
-            const data = await got(config.url).json()
-            const val = data.firstAvailabilityDate ? [data.firstAvailabilityDate] : null
+            // Please refactor this shitty code
+            return await (async () => {
+                const data = await got(config.url).json()
+                let value = data.firstAvailabilityDate
 
-            logger.info('New value', {val})
+                if (value) {
+                    let maxDate = config.wantedBefore;
+                    if (typeof config.wantedBefore === 'number') {
+                        maxDate = moment().add(config.wantedBefore, 'days').format('YYYY-MM-DD')
+                    }
 
-            return val
+                    if (moment(value).format('YYYY-MM-DD') > moment(maxDate).format('YYYY-MM-DD')) {
+                        value = null
+                    }
+                }
+
+                if (value && config.weekDays) {
+                    if (!config.weekDays.includes(moment(value).format('ddd').toLowerCase())) {
+                        value = null
+                    }
+                }
+
+                const val = value ? [value] : null
+
+                logger.info('New value', {val})
+
+                return val
+            })()
         }
 
         async function getAvail() {

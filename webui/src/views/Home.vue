@@ -50,7 +50,7 @@
 
         <p>You can add weekDays (ex ['mon', ...]), wantedBefore can be a number or a date.</p>
         <p>You can use full Url (Direct link to calendar) or keys alreadySeen, teleHealth, motiveCat, motive.</p>
-
+        <p>For Hapicare, use url "https://www.hapicare.fr/rest//public/agenda/doctor/availability/?doctorId=xxx&endDate=1667088000000&nbrOfDays=4&reasonId=702&siteId=10&startDate=1666742400000"</p>
       </div>
       <template #modal-footer>
         <div>
