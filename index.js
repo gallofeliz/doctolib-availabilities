@@ -286,9 +286,9 @@ async function run(testConf) {
 
     async function doJob(config, page, logger) {
 
-        await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36');
+        await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36');
 
-        await page.setViewport({ width: 1280, height: 800 })
+        await page.setViewport({ width: 1920, height: 1080 })
         await page.setRequestInterception(true);
 
         let intercepted = false;
