@@ -510,17 +510,20 @@ async function run(testConf) {
     const enabledChecks = testConf
         ? [testConf]
         : checks.filter(check => check.enabled)
-
+    
+    let page
     const security = setTimeout(async () => {
         logger.info('Closing browser (security anti freeze)')
-        await page.screenshot({path: '/tmp/debug.png'})
+        if (page) {
+            await page.screenshot({path: '/tmp/debug.png'})
+        }
         browser.close()
     }, enabledChecks.length * 60 * 1000)
 
     let testValue
 
     for(let conf of enabledChecks) {
-        let page
+
         const sessionLogger = logger.child({
             id: conf.id,
             sessionId: uuid4()
