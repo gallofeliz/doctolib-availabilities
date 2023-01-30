@@ -511,8 +511,9 @@ async function run(testConf) {
         ? [testConf]
         : checks.filter(check => check.enabled)
 
-    const security = setTimeout(() => {
+    const security = setTimeout(async () => {
         logger.info('Closing browser (security anti freeze)')
+        await page.screenshot({path: '/tmp/debug.png'})
         browser.close()
     }, enabledChecks.length * 60 * 1000)
 
