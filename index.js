@@ -513,7 +513,7 @@ async function run(testConf) {
     
     let page
     const security = setTimeout(async () => {
-        logger.info('Closing browser (security anti freeze)')
+        logger.error('Closing browser (security anti freeze)')
         if (page) {
             await page.screenshot({path: '/tmp/debug.png'})
         }
