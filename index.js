@@ -1,6 +1,6 @@
 #!/usr/bin/env nodejs
-const createLogger = require('js-libs/logger').default
-const loadConfig = require('js-libs/config').default
+const createLogger = require('@gallofeliz/js-libs/logger').default
+const loadConfig = require('@gallofeliz/js-libs/config').default
 const config = loadConfig({ filename: 'config.js' })
 const puppeteer = require('puppeteer-core');
 const moment = require('moment');
@@ -9,7 +9,7 @@ const _ = require('lodash');
 const {EventEmitter} = require('events');
 const logger = createLogger(config.log?.level || 'info')
 const uuid4 = require('uuid').v4
-const {handleExitSignals} = require('js-libs/exit-handle')
+const {handleExitSignals} = require('@gallofeliz/js-libs/exit-handle')
 const fs = require('fs')
 const checksPath = '/data/checks.json'
 const got = require('got')
