@@ -33,7 +33,7 @@ const checks = loadChecks()
 
 handleExitSignals()
 
-const HttpServer = require('js-libs/http-server').default
+const HttpServer = require('@gallofeliz/js-libs/http-server').default
 
 const api = new HttpServer({
     port: '80',
