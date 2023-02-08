@@ -9,7 +9,7 @@ RUN npm run build
 FROM node:16-buster AS core
 
 WORKDIR /build
-RUN npm i moment nodemailer lodash github:gallofeliz/js-libs
+RUN npm i moment nodemailer lodash https://github.com/gallofeliz/js-libs/releases/download/v0.1.5/gallofeliz-js-libs-0.1.5.tgz
 #ADD src tsconfig.json ./
 #RUN npm run build
 RUN npm prune --production
