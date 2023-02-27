@@ -18,19 +18,15 @@ FROM node:16-buster
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y chromium \
-    && npm i puppeteer-core
-    
-RUN npm i puppeteer
-
 #COPY --from=core /build/dist ./
 COPY --from=core /build/node_modules node_modules
+RUN npm i puppeteer
 COPY --from=webui /build/dist webui
 RUN mkdir /data && chown node /data
 VOLUME /data
 COPY index.js ./
 USER node
 ENV HEADLESS=true
-ENV CHROMIUM_PATH=/usr/bin/chromium
+#ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV TZ="Europe/Paris"
 CMD node .
