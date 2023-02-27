@@ -30,6 +30,9 @@ ENV HEADLESS=true
 #ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV TZ="Europe/Paris"
 RUN apt-get update && apt-get install -y chromium
-CMD node .
 
 USER node
+RUN mkdir-p /home/node/.cache
+
+CMD node .
+
