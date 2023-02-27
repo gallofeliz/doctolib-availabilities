@@ -276,6 +276,7 @@ if (config.mail) {
 }
 
 async function run(testConf) {
+    logger.info('Starting browser')
     const browser = await puppeteer.launch({
         defaultViewport: null,
         executablePath: process.env.CHROMIUM_PATH,
@@ -283,8 +284,12 @@ async function run(testConf) {
         args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox', '--disable-gpu'],
         headless: process.env.HEADLESS === 'false' ? false : true
     });
+    
+   logger.info('Browser started')
 
     async function doJob(config, page, logger) {
+        
+        logger.info('Doing job', config)
 
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36');
 
@@ -521,6 +526,8 @@ async function run(testConf) {
     }, enabledChecks.length * 60 * 1000)
 
     let testValue
+    
+    logger.info('Entering for')
 
     for(let conf of enabledChecks) {
 
@@ -529,6 +536,7 @@ async function run(testConf) {
             sessionId: uuid4()
         })
         try {
+            logger.info('Go Go !')
             page = await browser.newPage();
             sessionLogger.info('Let\'s go !', { status: 'running' })
             const newValue = await doJob({...config, ...conf}, page, sessionLogger)
@@ -537,6 +545,7 @@ async function run(testConf) {
             } else {
                 testValue = newValue
             }
+            logger.info('All right')
             await new Promise(resolve => setTimeout(resolve, 5000))
             sessionLogger.info('Oh yeah !', { status: 'done' })
         } catch (e) {
