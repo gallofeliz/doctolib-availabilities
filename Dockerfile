@@ -32,7 +32,7 @@ ENV TZ="Europe/Paris"
 RUN apt-get update && apt-get install -y chromium
 
 USER node
-RUN mkdir-p /home/node/.cache
+RUN mkdir -p /home/node/.cache
 
 CMD node .
 
