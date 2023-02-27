@@ -20,6 +20,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y chromium \
     && npm i puppeteer-core
+    
+RUN npm i puppeteer
 
 #COPY --from=core /build/dist ./
 COPY --from=core /build/node_modules node_modules
