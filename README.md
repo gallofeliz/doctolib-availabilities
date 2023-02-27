@@ -11,6 +11,8 @@
 - Automatic notify (mail) when availabilites are available
 - Docker native (See docker-compose for an example)
 
+Unfortunaly, I had problems with pupeeter and I switch node user to root. I don't like root on containers, so it should be good to put a non-privilegied user back.
+
 ## Note
 
 Turn off headless with `sudo HEADLESS=false docker-compose up`
