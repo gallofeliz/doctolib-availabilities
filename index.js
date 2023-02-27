@@ -2,7 +2,7 @@
 const createLogger = require('@gallofeliz/js-libs/logger').default
 const loadConfig = require('@gallofeliz/js-libs/config').default
 const config = loadConfig({ filename: 'config.js' })
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const moment = require('moment');
 const nodemailer = require("nodemailer");
 const _ = require('lodash');
