@@ -25,7 +25,7 @@ COPY --from=webui /build/dist webui
 RUN mkdir /data && chown node /data
 VOLUME /data
 COPY index.js ./
-USER node
+#USER node
 ENV HEADLESS=true
 #ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV TZ="Europe/Paris"
