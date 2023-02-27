@@ -19,7 +19,9 @@ FROM node:16-buster
 WORKDIR /app
 
 #COPY --from=core /build/dist ./
+USER node
 RUN npm i puppeteer
+USER root
 COPY --from=core /build/node_modules node_modules
 COPY --from=webui /build/dist webui
 RUN mkdir /data && chown node /data
@@ -32,7 +34,7 @@ ENV TZ="Europe/Paris"
 RUN apt-get update && apt-get install -y chromium
 
 USER node
-RUN mkdir -p /home/node/.cache/puppeteer
+
 
 CMD node .
 
