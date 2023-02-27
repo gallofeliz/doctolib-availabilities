@@ -19,8 +19,8 @@ FROM node:16-buster
 WORKDIR /app
 
 #COPY --from=core /build/dist ./
-COPY --from=core /build/node_modules node_modules
 RUN npm i puppeteer
+COPY --from=core /build/node_modules node_modules
 COPY --from=webui /build/dist webui
 RUN mkdir /data && chown node /data
 VOLUME /data
