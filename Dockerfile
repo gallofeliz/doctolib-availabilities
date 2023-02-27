@@ -29,4 +29,5 @@ COPY index.js ./
 ENV HEADLESS=true
 #ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV TZ="Europe/Paris"
+RUN apt-get update && apt-get install  -y libnss
 CMD node .
