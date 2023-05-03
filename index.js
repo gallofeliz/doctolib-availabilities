@@ -258,7 +258,7 @@ class MailNotifier {
                     to: this.mailConfig.to, // list of receivers
                     subject, // Subject line
                     text: text, // plain text body
-                    html: "<b>"+text+"</b>", // html body
+                    html: "<b>"+text.replace(/\n/g, '<br/>')+"</b>", // html body
                     attachments
                   })
             } catch (e) {
