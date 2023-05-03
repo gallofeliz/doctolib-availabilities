@@ -257,7 +257,7 @@ class MailNotifier {
                     from: this.mailConfig.from || '"Doctolib alert" <localhost>', // sender address
                     to: this.mailConfig.to, // list of receivers
                     subject, // Subject line
-                    text: text, // plain text body
+                   // text: text, // plain text body
                     html: "<b>"+text.replace(/\n/g, '<br/>')+"</b>", // html body
                     attachments
                   })
