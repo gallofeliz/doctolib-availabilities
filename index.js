@@ -282,7 +282,7 @@ async function run(testConf) {
         //executablePath: process.env.CHROMIUM_PATH,
         // --disable-gpu avoid RPI to freeze on newPage() after one browser close
         args: ['--start-maximized', '--disable-features=site-per-process', '--no-sandbox', '--disable-gpu'],
-        headless: process.env.HEADLESS === 'false' ? false : true
+        headless: process.env.HEADLESS === 'false' ? false : 'new'
     });
     
    logger.info('Browser started')
