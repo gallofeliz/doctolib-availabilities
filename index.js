@@ -342,12 +342,12 @@ async function run(testConf) {
 
 
                     if (intercepted) {
-                        logger.debug('network abort request ' + request.url())
+                        //logger.debug('network abort request ' + request.url())
                         request.abort()
                         return
                     }
 
-                    logger.debug('network request ' + request.url())
+                    //logger.debug('network request ' + request.url())
 
                     if (isXhr && isAvail){
 
@@ -355,7 +355,7 @@ async function run(testConf) {
 
                         const newUrl = request.url().replace('limit=', 'limit=' + lookAhead + '&')
 
-                        logger.debug('Interception ' + request.url() + ' ; sending ' + newUrl)
+                        //logger.debug('Interception ' + request.url() + ' ; sending ' + newUrl)
 
                         intercepted = true
 
@@ -372,7 +372,7 @@ async function run(testConf) {
                     const isXhr = ['xhr','fetch'].includes(response.request().resourceType())
                     const isAvail = response.url().includes('availabilities.json')
 
-                    logger.debug('network response ' + response.request().url())
+                    //logger.debug('network response ' + response.request().url())
 
                     if (isXhr && isAvail){
 
@@ -380,7 +380,7 @@ async function run(testConf) {
                             return reject(new Error('Response error : ' + await response.text()))
                         }
 
-                        logger.debug('I resolved the solution !!')
+                        //logger.debug('I resolved the solution !!')
                         resolve(JSON.parse(await response.text()))
                     }
                 })
